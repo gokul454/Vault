@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0e0f11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+<meta name="description" content="Your private personal data vault — store passwords, cards, notes, anything.">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<title>Vault — Personal Data Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0e0f11;--bg-2:#13151a;--bg-3:#1a1d24;--bg-4:#22262f;
+  --border:#2a2f3a;--border-2:#363c4a;
+  --text:#e8eaf0;--text-2:#9ba3b8;--text-3:#5a6070;
+  --accent:#c8a96e;--accent-2:#e8c98e;
+  --accent-dim:rgba(200,169,110,0.12);--accent-glow:rgba(200,169,110,0.06);
+  --danger:#e06060;--danger-dim:rgba(224,96,96,0.12);
+  --success:#5eb882;--success-dim:rgba(94,184,130,0.12);
+  --radius:8px;--radius-lg:14px;--sidebar-w:248px;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--serif:'DM Serif Display',serif;
+  --tr:150ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 220ms ease,min-width 220ms ease}
+#sidebar.collapsed{width:52px;min-width:52px}
+.sidebar-header{padding:16px 12px 13px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
+.logo{font-family:var(--serif);font-size:17px;color:var(--accent);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
+.logo-icon{width:28px;height:28px;min-width:28px;border:1.5px solid var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--accent-dim)}
+.logo-text{overflow:hidden;transition:opacity 200ms,max-width 200ms;max-width:180px}
+#sidebar.collapsed .logo-text{opacity:0;max-width:0}
+.collapse-btn{background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px 6px;border-radius:4px;transition:all var(--tr);flex-shrink:0;font-size:11px;display:flex;align-items:center}
+.collapse-btn:hover{color:var(--text);background:var(--bg-3)}
+.sidebar-search{padding:8px 8px 4px;flex-shrink:0;overflow:hidden}
+#sidebar.collapsed .sidebar-search{display:none}
+.sb-search-wrap{position:relative}
+.sb-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:12px;pointer-events:none}
+.sb-search{width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:6px 8px 6px 28px;outline:none;transition:border-color var(--tr)}
+.sb-search:focus{border-color:var(--accent)}
+.sb-search::placeholder{color:var(--text-3)}
+.sidebar-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding:8px 12px 4px;flex-shrink:0;white-space:nowrap;overflow:hidden}
+#sidebar.collapsed .sidebar-label{font-size:8px;padding:8px 0 4px;text-align:center;letter-spacing:0}
+.collections-list{flex:1;overflow-y:auto;padding:3px 6px}
+.col-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--radius);cursor:pointer;color:var(--text-2);font-size:13px;transition:background var(--tr),color var(--tr);user-select:none;white-space:nowrap;overflow:hidden}
+.col-item:hover{background:var(--bg-3);color:var(--text)}
+.col-item.active{background:var(--accent-dim);color:var(--accent)}
+.col-item-icon{width:22px;height:22px;min-width:22px;border-radius:5px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;font-size:11px;border:1px solid var(--border);flex-shrink:0}
+.col-item.active .col-item-icon{background:var(--accent-dim);border-color:var(--accent)}
+.col-item-name{overflow:hidden;text-overflow:ellipsis;flex:1}
+#sidebar.collapsed .col-item-name{display:none}
+.col-item-count{font-family:var(--mono);font-size:10px;color:var(--text-3);background:var(--bg-4);padding:1px 5px;border-radius:99px;border:1px solid var(--border);flex-shrink:0}
+#sidebar.collapsed .col-item-count{display:none}
+.sidebar-footer{padding:9px 6px;border-top:1px solid var(--border);flex-shrink:0}
+.btn-new-col{width:100%;padding:8px 10px;background:transparent;border:1px dashed var(--border-2);border-radius:var(--radius);color:var(--text-3);font-family:var(--sans);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all var(--tr);white-space:nowrap;overflow:hidden}
+.btn-new-col:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+#sidebar.collapsed .btn-new-col-label{display:none}
+#main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
+.topbar{padding:12px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:rgba(14,15,17,.9);backdrop-filter:blur(12px);position:sticky;top:0;z-index:10;flex-shrink:0}
+.topbar-bc{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);flex:1;min-width:0;overflow:hidden}
+.bc-link{cursor:pointer;flex-shrink:0}
+.bc-link:hover{color:var(--text)}
+.bc-active{color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-sep{color:var(--text-3);flex-shrink:0}
+.topbar-actions{display:flex;gap:6px;flex-shrink:0}
+.btn{padding:7px 13px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px;transition:all var(--tr);white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0e0f11;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+.btn-ghost{background:transparent;color:var(--text-2);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg-3);color:var(--text);border-color:var(--border-2)}
+.btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn-danger:hover{background:var(--danger-dim)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.page{padding:22px 26px;flex:1}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:360px;gap:13px;color:var(--text-3);text-align:center}
+.empty-icon{width:58px;height:58px;border:1.5px solid var(--border);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--bg-2)}
+.empty-state h3{font-size:16px;color:var(--text-2);font-weight:500}
+.empty-state p{font-size:13px;max-width:280px;line-height:1.65}
+.kbd-hint{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);margin-top:4px}
+.tips-bar{background:var(--accent-dim);border:1px solid rgba(200,169,110,.2);border-radius:var(--radius);padding:10px 14px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--accent)}
+.tip-close{margin-left:auto;background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;opacity:.6}
+.tip-close:hover{opacity:1}
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--serif);font-size:22px;color:var(--text)}
+.section-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px}
+.col-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:all 160ms ease;position:relative;overflow:hidden}
+.col-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity 160ms}
+.col-card:hover{border-color:var(--border-2);background:var(--bg-3);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.col-card:hover::before{opacity:1}
+.card-icon{font-size:22px;margin-bottom:12px}
+.card-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.card-add{border:1px dashed var(--border);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:112px;color:var(--text-3);font-size:12px}
+.card-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.card-add-plus{font-size:22px;line-height:1}
+.entries-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.entry-sw{flex:1;position:relative}
+.entry-si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:12px;pointer-events:none}
+.entry-search{width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:13px;padding:8px 10px 8px 30px;outline:none;transition:border-color var(--tr)}
+.entry-search:focus{border-color:var(--accent)}
+.entry-search::placeholder{color:var(--text-3)}
+.entries-table{width:100%;border-collapse:collapse}
+.entries-table th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);text-align:left;padding:8px 14px;border-bottom:1px solid var(--border);font-weight:400}
+.entries-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;color:var(--text-2)}
+.entries-table tr:last-child td{border-bottom:none}
+.entries-table tbody tr{cursor:pointer;transition:background var(--tr)}
+.entries-table tbody tr:hover td{background:var(--bg-3)}
+.entries-table tbody tr:hover .row-go{opacity:1}
+.et-title{color:var(--text);font-weight:500}
+.et-date{font-family:var(--mono);font-size:11px;white-space:nowrap}
+.row-go{opacity:0;transition:opacity var(--tr);font-size:13px;color:var(--text-3)}
+.fpill{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-3);margin-right:3px;margin-bottom:2px}
+.fpill.tp{color:var(--accent);border-color:rgba(200,169,110,.3)}
+.fpill.tl{color:#6ba3e0;border-color:rgba(107,163,224,.3)}
+.fpill.td{color:var(--success);border-color:rgba(94,184,130,.3)}
+.no-results{padding:36px;text-align:center;color:var(--text-3);font-size:13px}
+.detail-header{margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.detail-title{font-family:var(--serif);font-size:26px;color:var(--text);margin-bottom:8px}
+.detail-meta{font-family:var(--mono);font-size:11px;color:var(--text-3);display:flex;gap:14px;flex-wrap:wrap}
+.detail-progress{margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-3)}
+.prog-bar{flex:1;height:3px;background:var(--bg-4);border-radius:2px;overflow:hidden;max-width:200px}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 400ms ease}
+.fields-grid{display:grid;gap:9px}
+.field-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;display:flex;flex-direction:column;gap:6px;position:relative;transition:border-color var(--tr)}
+.field-card:hover{border-color:var(--border-2)}
+.field-card:hover .f-copy{opacity:1}
+.f-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.f-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);display:flex;align-items:center;gap:5px}
+.f-badge{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--bg-4);border:1px solid var(--border);color:var(--text-3)}
+.f-copy{opacity:0;background:none;border:1px solid var(--border);color:var(--text-3);cursor:pointer;font-size:10px;padding:3px 8px;border-radius:4px;transition:all var(--tr);font-family:var(--mono)}
+.f-copy:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+.f-value{font-size:14px;color:var(--text);word-break:break-word}
+.f-value.masked{font-family:var(--mono);letter-spacing:.2em;font-size:20px;color:var(--text-3)}
+.f-value a{color:#6ba3e0;text-decoration:none}.f-value a:hover{text-decoration:underline}
+.pw-actions{display:flex;gap:6px;margin-top:2px}
+.pw-btn{background:none;border:1px solid var(--border);color:var(--text-3);cursor:pointer;font-size:11px;padding:3px 9px;border-radius:4px;font-family:var(--mono);transition:all var(--tr)}
+.pw-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+.img-preview{max-width:100%;max-height:220px;border-radius:var(--radius);border:1px solid var(--border);object-fit:contain;margin-top:4px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:2px;flex-shrink:0}
+.dt{background:var(--text-3)}.dp{background:var(--accent)}.dl{background:#6ba3e0}.dd{background:var(--success)}.dn{background:#c07fe0}.da{background:var(--text-3)}.df{background:var(--danger)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:46px 16px;overflow-y:auto}
+.modal{background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-lg);width:100%;max-width:580px;padding:24px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:m-in 150ms ease}
+@keyframes m-in{from{opacity:0;transform:translateY(-8px) scale(.99)}to{opacity:1;transform:none}}
+.modal-title{font-family:var(--serif);font-size:20px;margin-bottom:18px;color:var(--text)}
+.modal-close{position:absolute;top:15px;right:15px;background:var(--bg-3);border:1px solid var(--border);color:var(--text-3);cursor:pointer;font-size:13px;padding:4px 9px;border-radius:6px;transition:all var(--tr)}
+.modal-close:hover{color:var(--text);border-color:var(--border-2)}
+.form-group{margin-bottom:13px;display:flex;flex-direction:column;gap:5px}
+.form-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.form-label .hint{font-size:10px;color:var(--text-3);text-transform:none;letter-spacing:0;font-family:var(--sans);opacity:.7}
+.form-input,.form-select,.form-textarea{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 12px;outline:none;transition:border-color var(--tr),box-shadow var(--tr);width:100%}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6070' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.5}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--text-3)}
+.icon-grid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px}
+.icon-opt{font-size:18px;padding:5px 7px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all 120ms;line-height:1}
+.icon-opt:hover{background:var(--bg-4);border-color:var(--border)}
+.icon-opt.selected{background:var(--accent-dim);border-color:var(--accent)}
+.field-row{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;margin-bottom:6px;display:grid;grid-template-columns:1fr 126px 30px;gap:7px;align-items:center;transition:border-color var(--tr);cursor:grab}
+.field-row:active{cursor:grabbing}
+.field-row.dragging{opacity:.4;border-style:dashed}
+.field-row.drag-over{border-color:var(--accent);background:var(--accent-glow)}
+.field-row-value{grid-column:1/-1}
+.add-field-btn{display:flex;align-items:center;gap:6px;padding:9px 12px;border:1px dashed var(--border-2);border-radius:var(--radius);background:transparent;color:var(--text-3);font-family:var(--sans);font-size:12px;cursor:pointer;transition:all var(--tr);width:100%;justify-content:center}
+.add-field-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.rm-field{background:none;border:none;color:var(--text-3);cursor:pointer;padding:5px;border-radius:4px;transition:all var(--tr);font-size:13px;display:flex;align-items:center;justify-content:center}
+.rm-field:hover{color:var(--danger);background:var(--danger-dim)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.pal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding-top:90px}
+.palette{background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-lg);width:100%;max-width:510px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:m-in 140ms ease}
+.pal-input-wrap{display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--border)}
+.pal-icon{color:var(--text-3);font-size:14px;flex-shrink:0}
+.pal-input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:15px}
+.pal-input::placeholder{color:var(--text-3)}
+.pal-esc{font-family:var(--mono);font-size:10px;color:var(--text-3);background:var(--bg-3);border:1px solid var(--border);border-radius:4px;padding:2px 6px}
+.pal-results{max-height:360px;overflow-y:auto}
+.pal-section{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:9px 15px 3px}
+.pal-item{display:flex;align-items:center;gap:10px;padding:10px 15px;cursor:pointer;transition:background var(--tr);font-size:13px}
+.pal-item:hover,.pal-item.focused{background:var(--bg-3)}
+.pal-item-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-4);font-size:13px;flex-shrink:0}
+.pi-label{flex:1;color:var(--text)}
+.pi-sub{font-size:11px;color:var(--text-3)}
+.pi-key{font-family:var(--mono);font-size:10px;color:var(--text-3)}
+.pal-empty{padding:28px;text-align:center;color:var(--text-3);font-size:13px}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px}
+.confirm-box{background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-lg);padding:22px;max-width:360px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:m-in 140ms ease}
+.confirm-box h3{font-size:16px;margin-bottom:8px;color:var(--text)}
+.confirm-box p{font-size:13px;color:var(--text-2);margin-bottom:20px;line-height:1.6}
+.confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+.shortcuts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.sc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-2)}
+.sc-keys{display:flex;gap:3px}
+.kbd{font-family:var(--mono);font-size:10px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:4px;padding:2px 6px;color:var(--text-3)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);padding:8px 18px;border-radius:99px;font-size:12px;font-family:var(--mono);z-index:999;pointer-events:none;opacity:0;transition:opacity 200ms,transform 200ms;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--success);color:var(--success)}
+@media(max-width:600px){#sidebar{display:none}.page{padding:14px}.grid{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr 30px}.field-row .form-select{grid-column:1;grid-row:2}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><div class="logo-icon">⬡</div><span class="logo-text">Vault</span></div>
+      <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()" title="Toggle (Ctrl+B)">◀</button>
+    </div>
+    <div class="sidebar-search">
+      <div class="sb-search-wrap">
+        <span class="sb-search-icon">⌕</span>
+        <input class="sb-search" id="sbSearch" placeholder="Filter…" oninput="renderSidebar()" autocomplete="off">
+      </div>
+    </div>
+    <div class="sidebar-label">Collections</div>
+    <div class="collections-list" id="sidebarList"></div>
+    <div class="sidebar-footer">
+      <button class="btn-new-col" onclick="openNewCollectionModal()" title="New (Ctrl+Shift+N)">
+        <span>＋</span><span class="btn-new-col-label">New Collection</span>
+      </button>
+    </div>
+  </aside>
+  <div id="main">
+    <div class="topbar" id="topbar"></div>
+    <div id="page-container" style="flex:1;display:flex;flex-direction:column"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" style="display:none" onclick="closeOverlay(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<div class="pal-overlay" id="palette" style="display:none" onclick="closePalette(event)">
+  <div class="palette" id="palette-box">
+    <div class="pal-input-wrap">
+      <span class="pal-icon">⌕</span>
+      <input class="pal-input" id="palInput" placeholder="Search entries, collections, or run a command…" oninput="renderPalette()" onkeydown="palKeydown(event)" autocomplete="off">
+      <span class="pal-esc">ESC</span>
+    </div>
+    <div class="pal-results" id="palResults"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Storage ── */
+const Store={K:'vault_v1',P:'vault_prefs_v1',
+  load(){try{return JSON.parse(localStorage.getItem(this.K))||{collections:[]}}catch{return{collections:[]}}},
+  save(s){localStorage.setItem(this.K,JSON.stringify(s))},
+  lp(){try{return JSON.parse(localStorage.getItem(this.P))||{}}catch{return{}}},
+  sp(p){localStorage.setItem(this.P,JSON.stringify(p))}
+};
+let state=Store.load();
+let prefs=Store.lp();
+let view={page:'home',collectionId:null,entryId:null};
+let sbCollapsed=prefs.sbCollapsed||false;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const ICONS=['📁','🔐','💳','🌐','📝','🔑','📧','🏦','💼','🛡️','📷','🗂️','🧾','🔒','🗝️','💡','📋','🎯','📊','🧩','🏷️','🔖','📌','🔔','🌿','⚡','🎴','🗺️'];
+const FTYPES=['text','password','textarea','number','date','link','file'];
+const TICONS={text:'T',password:'●',textarea:'¶',number:'#',date:'◷',link:'↗',file:'⌁'};
+const DOTCLS={text:'dt',password:'dp',textarea:'da',number:'dn',date:'dd',link:'dl',file:'df'};
+const getCol=id=>state.collections.find(c=>c.id===id);
+const getEnt=(cid,eid)=>getCol(cid)?.entries?.find(e=>e.id===eid);
+const saveState=()=>Store.save(state);
+const savePrefs=()=>Store.sp(prefs);
+let _tt;
+function toast(msg,ok=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(ok?' ok':'');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2200)}
+function toggleSidebar(){sbCollapsed=!sbCollapsed;prefs.sbCollapsed=sbCollapsed;savePrefs();document.getElementById('sidebar').classList.toggle('collapsed',sbCollapsed);document.getElementById('collapseBtn').textContent=sbCollapsed?'▶':'◀'}
+function go(v){view={...v};render()}
+function render(){renderSidebar();renderTopbar();const c=document.getElementById('page-container');c.innerHTML='';if(view.page==='home')renderHome(c);else if(view.page==='entries')renderEntries(c);else if(view.page==='detail')renderDetail(c)}
+function renderSidebar(){const sb=document.getElementById('sidebar');sb.classList.toggle('collapsed',sbCollapsed);document.getElementById('collapseBtn').textContent=sbCollapsed?'▶':'◀';const list=document.getElementById('sidebarList');list.innerHTML='';const q=(document.getElementById('sbSearch')?.value||'').toLowerCase();const cols=state.collections.filter(c=>!q||c.name.toLowerCase().includes(q));if(!cols.length){list.innerHTML=`<div style="padding:10px 10px;font-size:12px;color:var(--text-3)">${q?'No matches':'No collections yet'}</div>`;return}cols.forEach(col=>{const d=document.createElement('div');d.className='col-item'+(view.collectionId===col.id?' active':'');d.title=sbCollapsed?col.name:'';d.innerHTML=`<div class="col-item-icon">${col.icon||'📁'}</div><span class="col-item-name">${esc(col.name)}</span><span class="col-item-count">${(col.entries||[]).length}</span>`;d.onclick=()=>go({page:'entries',collectionId:col.id});list.appendChild(d)})}
+function renderTopbar(){const bar=document.getElementById('topbar');let bc='',ac='';if(view.page==='home'){bc=`<span class="bc-active">All Collections</span>`;ac=`<button class="btn btn-ghost btn-sm" onclick="openPalette()" title="Ctrl+K">⌕ Search</button><button class="btn btn-primary btn-sm" onclick="openNewCollectionModal()">＋ Collection</button>`}else if(view.page==='entries'){const col=getCol(view.collectionId);bc=`<span class="bc-link" onclick="go({page:'home'})">Collections</span><span class="bc-sep">›</span><span class="bc-active">${esc(col?.name||'')}</span>`;ac=`<button class="btn btn-ghost btn-sm" onclick="openPalette()" title="Ctrl+K">⌕</button><button class="btn btn-ghost btn-sm" onclick="openEditCollectionModal('${view.collectionId}')">Edit</button><button class="btn btn-primary btn-sm" onclick="openNewEntryModal('${view.collectionId}')">＋ Entry</button>`}else if(view.page==='detail'){const col=getCol(view.collectionId),ent=getEnt(view.collectionId,view.entryId);bc=`<span class="bc-link" onclick="go({page:'home'})">Collections</span><span class="bc-sep">›</span><span class="bc-link" onclick="go({page:'entries',collectionId:'${view.collectionId}'})">${esc(col?.name||'')}</span><span class="bc-sep">›</span><span class="bc-active">${esc(ent?.title||'')}</span>`;ac=`<button class="btn btn-ghost btn-sm" onclick="openEditEntryModal('${view.collectionId}','${view.entryId}')">✏ Edit</button><button class="btn btn-danger btn-sm" onclick="confirmDeleteEntry('${view.collectionId}','${view.entryId}')">Delete</button>`}bar.innerHTML=`<div class="topbar-bc">${bc}</div><div class="topbar-actions">${ac}</div>`}
+function renderHome(c){const pg=document.createElement('div');pg.className='page';if(!state.collections.length){pg.innerHTML=`<div class="empty-state"><div class="empty-icon">⬡</div><h3>Welcome to Vault</h3><p>Your private data vault. Create a collection to start storing passwords, cards, notes — anything.</p><button class="btn btn-primary" onclick="openNewCollectionModal()" style="margin-top:4px">＋ Create first collection</button><div class="kbd-hint"><span class="kbd">Ctrl</span>+<span class="kbd">K</span> <span>to search anywhere</span></div></div>`}else{const tot=state.collections.reduce((a,c)=>a+(c.entries||[]).length,0);const tip=!prefs.tipDismissed?`<div class="tips-bar" id="tipsBar"><span>💡</span><span>Press <strong>Ctrl+K</strong> to search everywhere · <strong>Ctrl+B</strong> to hide sidebar · <strong>?</strong> for all shortcuts</span><button class="tip-close" onclick="dismissTip()">✕</button></div>`:'';pg.innerHTML=`${tip}<div class="section-header"><div><div class="section-title">Your Collections</div><div class="section-sub">${state.collections.length} collection${state.collections.length!==1?'s':''} · ${tot} entr${tot!==1?'ies':'y'}</div></div></div><div class="grid" id="cGrid"></div>`;c.appendChild(pg);const grid=pg.querySelector('#cGrid');state.collections.forEach(col=>{const card=document.createElement('div');card.className='col-card';const cnt=(col.entries||[]).length;card.innerHTML=`<div class="card-icon">${col.icon||'📁'}</div><div class="card-name">${esc(col.name)}</div><div class="card-meta">${cnt} entr${cnt!==1?'ies':'y'}</div>`;card.onclick=()=>go({page:'entries',collectionId:col.id});grid.appendChild(card)});const add=document.createElement('div');add.className='col-card card-add';add.innerHTML=`<div class="card-add-plus">＋</div><span>New Collection</span>`;add.onclick=openNewCollectionModal;grid.appendChild(add);return}c.appendChild(pg)}
+function dismissTip(){prefs.tipDismissed=true;savePrefs();const e=document.getElementById('tipsBar');if(e)e.remove()}
+function renderEntries(c){const col=getCol(view.collectionId);if(!col){go({page:'home'});return}const pg=document.createElement('div');pg.className='page';if(!col.entries?.length){pg.innerHTML=`<div class="empty-state"><div class="empty-icon">${col.icon||'📁'}</div><h3>${esc(col.name)}</h3><p>No entries yet. Add your first one to start storing data here.</p><button class="btn btn-primary" onclick="openNewEntryModal('${col.id}')" style="margin-top:4px">＋ Add first entry</button><div class="kbd-hint"><span class="kbd">N</span> new entry</div></div>`}else{pg.innerHTML=`<div class="entries-header"><div class="entry-sw"><span class="entry-si">⌕</span><input class="entry-search" id="eSearch" placeholder="Search in ${esc(col.name)}…" oninput="filterEntries('${col.id}')" autocomplete="off"></div><button class="btn btn-ghost btn-sm" onclick="openEditCollectionModal('${col.id}')">Edit collection</button></div><table class="entries-table"><thead><tr><th>Title</th><th>Fields</th><th>Added</th><th></th></tr></thead><tbody id="eBody"></tbody></table><div id="noRes" class="no-results" style="display:none">Nothing matches your search.</div>`;c.appendChild(pg);renderEntryRows(col,col.entries);return}c.appendChild(pg)}
+function renderEntryRows(col,entries){const tb=document.getElementById('eBody'),nr=document.getElementById('noRes');if(!tb)return;tb.innerHTML='';if(!entries.length){if(nr)nr.style.display='block';return}if(nr)nr.style.display='none';entries.forEach(e=>{const pills=(e.fields||[]).slice(0,4).map(f=>`<span class="fpill${f.type==='password'?' tp':f.type==='link'?' tl':f.type==='date'?' td':''}">${esc(f.label)}</span>`).join('');const more=(e.fields||[]).length>4?`<span class="fpill">+${(e.fields||[]).length-4}</span>`:'';const dt=e.createdAt?new Date(e.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';const tr=document.createElement('tr');tr.innerHTML=`<td class="et-title">${esc(e.title)}</td><td>${pills}${more}</td><td class="et-date">${dt}</td><td class="row-go">→</td>`;tr.onclick=()=>go({page:'detail',collectionId:col.id,entryId:e.id});tb.appendChild(tr)})}
+function filterEntries(colId){const col=getCol(colId);if(!col)return;const q=(document.getElementById('eSearch')?.value||'').toLowerCase();const res=q?col.entries.filter(e=>e.title.toLowerCase().includes(q)||(e.fields||[]).some(f=>f.label.toLowerCase().includes(q)||String(f.value||'').toLowerCase().includes(q))):col.entries;renderEntryRows(col,res)}
+function renderDetail(c){const col=getCol(view.collectionId),ent=getEnt(view.collectionId,view.entryId);if(!ent){go({page:'entries',collectionId:view.collectionId});return}const filled=(ent.fields||[]).filter(f=>f.value!==''&&f.value!=null).length;const total=(ent.fields||[]).length;const pct=total?Math.round(filled/total*100):0;const dt=ent.createdAt?new Date(ent.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'';const upd=ent.updatedAt?new Date(ent.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';const pg=document.createElement('div');pg.className='page';let fhtml=total?`<div class="fields-grid">${(ent.fields||[]).map((f,i)=>fieldCard(f,i,col.id,ent.id)).join('')}</div>`:`<div class="empty-state" style="min-height:180px"><div style="color:var(--text-3);font-size:13px">No fields yet.</div><button class="btn btn-ghost" onclick="openEditEntryModal('${col.id}','${ent.id}')">＋ Add fields</button></div>`;pg.innerHTML=`<div class="detail-header"><div class="detail-title">${esc(ent.title)}</div><div class="detail-meta">${dt?`<span>Created ${dt}</span>`:''}${upd?`<span>Updated ${upd}</span>`:''}${total?`<span>${total} field${total!==1?'s':''}</span>`:''}<span>in ${esc(col.name)}</span></div>${total?`<div class="detail-progress"><span>${filled}/${total} filled</span><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><span>${pct}%</span></div>`:''}</div>${fhtml}`;c.appendChild(pg)}
+function fieldCard(f,idx,colId,entId){const t=f.type||'text';let vhtml='';if(t==='password'){vhtml=`<div class="f-value masked" id="pv${idx}">••••••••</div><div class="pw-actions"><button class="pw-btn" id="pvt${idx}" onclick="togglePw(${idx},'${esc(String(f.value||''))}')">Show</button><button class="pw-btn" onclick="cpField(event,'${esc(String(f.value||''))}')">Copy</button></div>`}else if(t==='link'){const raw=f.value||'',href=raw.startsWith('http')?raw:'https://'+raw;vhtml=`<div class="f-value"><a href="${esc(href)}" target="_blank" rel="noopener">↗ ${esc(raw)}</a></div>`}else if(t==='file'){if(f.value?.startsWith('data:image'))vhtml=`<img class="img-preview" src="${f.value}" alt="${esc(f.label)}">`;else if(f.value)vhtml=`<div class="f-value"><a href="${f.value}" download style="color:var(--accent)">⌁ Download</a></div>`;else vhtml=`<div class="f-value" style="color:var(--text-3)">No file</div>`}else if(t==='textarea'){vhtml=`<div class="f-value" style="white-space:pre-wrap;line-height:1.7">${esc(f.value||'—')}</div>`}else if(t==='date'){const d=f.value?new Date(f.value+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}):'—';vhtml=`<div class="f-value">${d}</div>`}else{vhtml=`<div class="f-value">${esc(String(f.value??'—'))}</div>`}const canCopy=['text','number','link','date'].includes(t)&&f.value;const copyBtn=canCopy?`<button class="f-copy" onclick="cpField(event,'${esc(String(f.value||''))}')">copy</button>`:'';return`<div class="field-card"><div class="f-label-row"><div class="f-label"><span class="dot ${DOTCLS[t]||'dt'}"></span>${esc(f.label)}<span class="f-badge">${t}</span></div>${t!=='password'?copyBtn:''}</div>${vhtml}</div>`}
+function togglePw(idx,val){const el=document.getElementById(`pv${idx}`),btn=document.getElementById(`pvt${idx}`);if(!el)return;if(el.classList.contains('masked')){el.classList.remove('masked');el.textContent=val;if(btn)btn.textContent='Hide'}else{el.classList.add('masked');el.textContent='••••••••';if(btn)btn.textContent='Show'}}
+function cpField(e,val){e.stopPropagation();navigator.clipboard.writeText(val).then(()=>toast('✓ Copied',true)).catch(()=>{})}
+let _pi=-1;
+function openPalette(){document.getElementById('palette').style.display='flex';setTimeout(()=>document.getElementById('palInput').focus(),10);_pi=-1;renderPalette()}
+function closePalette(e){if(!e||e.target===document.getElementById('palette')){document.getElementById('palette').style.display='none';document.getElementById('palInput').value=''}}
+function renderPalette(){const q=document.getElementById('palInput').value.toLowerCase();const res=document.getElementById('palResults');res.innerHTML='';_pi=-1;const cmds=[{icon:'＋',label:'New Collection',sub:'Create a new collection',fn:()=>{closePalette({});openNewCollectionModal()}},{icon:'⌨',label:'Keyboard Shortcuts',sub:'View all shortcuts',fn:showShortcuts}];if(view.page==='entries'&&view.collectionId)cmds.unshift({icon:'＋',label:'New Entry',sub:`Add to ${getCol(view.collectionId)?.name}`,fn:()=>{closePalette({});openNewEntryModal(view.collectionId)}});const fc=q?cmds.filter(c=>c.label.toLowerCase().includes(q)||c.sub.toLowerCase().includes(q)):cmds;const fe=[];state.collections.forEach(col=>(col.entries||[]).forEach(ent=>{if(!q||ent.title.toLowerCase().includes(q)||col.name.toLowerCase().includes(q)||(ent.fields||[]).some(f=>f.label.toLowerCase().includes(q)))fe.push({col,ent})}));if(!fc.length&&!fe.length){res.innerHTML=`<div class="pal-empty">No results for "<strong>${esc(q)}</strong>"</div>`;return}let all=[];if(fc.length){res.insertAdjacentHTML('beforeend','<div class="pal-section">Commands</div>');fc.forEach(cmd=>{const it=document.createElement('div');it.className='pal-item';it.innerHTML=`<div class="pal-item-icon">${cmd.icon}</div><div><div class="pi-label">${cmd.label}</div><div class="pi-sub">${cmd.sub}</div></div>`;it.onclick=()=>{closePalette({});cmd.fn()};res.appendChild(it);all.push(it)})}if(fe.length){res.insertAdjacentHTML('beforeend','<div class="pal-section">Entries</div>');fe.slice(0,8).forEach(({col,ent})=>{const it=document.createElement('div');it.className='pal-item';it.innerHTML=`<div class="pal-item-icon">${col.icon||'📁'}</div><div style="flex:1;min-width:0"><div class="pi-label">${esc(ent.title)}</div><div class="pi-sub">${esc(col.name)} · ${(ent.fields||[]).length} fields</div></div><div class="pi-key">↵</div>`;it.onclick=()=>{closePalette({});go({page:'detail',collectionId:col.id,entryId:ent.id})};res.appendChild(it);all.push(it)})}res._items=all}
+function palKeydown(e){const items=(document.getElementById('palResults')._items||[]);if(e.key==='Escape'){closePalette({});return}if(e.key==='ArrowDown'){e.preventDefault();_pi=Math.min(_pi+1,items.length-1);items.forEach((it,i)=>it.classList.toggle('focused',i===_pi));items[_pi]?.scrollIntoView({block:'nearest'})}else if(e.key==='ArrowUp'){e.preventDefault();_pi=Math.max(_pi-1,0);items.forEach((it,i)=>it.classList.toggle('focused',i===_pi));items[_pi]?.scrollIntoView({block:'nearest'})}else if(e.key==='Enter'&&_pi>=0)items[_pi]?.click()}
+function showShortcuts(){closePalette({});const rows=[[['Ctrl','K'],'Open command palette'],[['Ctrl','B'],'Toggle sidebar'],[['Ctrl','Shift','N'],'New collection'],[['N'],'New entry (entries page)'],[['E'],'Edit entry (detail page)'],[['Backspace'],'Go back'],[['Esc'],'Close modal / palette'],[['↑ ↓'],'Navigate palette'],[['↵'],'Select palette item'],[['?'],'Show this panel']].map(([k,l])=>`<div class="sc-row"><span>${l}</span><div class="sc-keys">${k.map(x=>`<span class="kbd">${x}</span>`).join('+')}</div></div>`).join('');showModal(`<div class="modal-title">⌨ Keyboard Shortcuts</div><button class="modal-close" onclick="closeModal()">✕</button><div class="shortcuts-grid">${rows}</div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>`)}
+function openNewCollectionModal(){const opts=ICONS.map(ic=>`<span class="icon-opt" onclick="selIcon(this,'${ic}')" data-icon="${ic}">${ic}</span>`).join('');showModal(`<div class="modal-title">New Collection</div><button class="modal-close" onclick="closeModal()">✕</button><div class="form-group"><label class="form-label">Name <span class="hint">— what are you storing?</span></label><input class="form-input" id="cName" placeholder="e.g. Passwords, Bank Cards, Work Notes…" autofocus maxlength="50"></div><div class="form-group"><label class="form-label">Icon</label><div class="icon-grid" id="iconPicker">${opts}</div><input type="hidden" id="cIcon" value="📁"></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="createCollection()">Create Collection</button></div>`);setTimeout(()=>{const f=document.querySelector('#iconPicker .icon-opt');if(f)selIcon(f,f.dataset.icon)},10)}
+function selIcon(el,icon){document.querySelectorAll('#iconPicker .icon-opt').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');document.getElementById('cIcon').value=icon}
+function createCollection(){const name=document.getElementById('cName')?.value?.trim();const icon=document.getElementById('cIcon')?.value||'📁';if(!name){hiErr('cName');return}const col={id:uid(),name,icon,entries:[],createdAt:Date.now()};state.collections.push(col);saveState();closeModal();toast('✓ Collection created',true);go({page:'entries',collectionId:col.id})}
+function openEditCollectionModal(colId){const col=getCol(colId);if(!col)return;const opts=ICONS.map(ic=>`<span class="icon-opt" onclick="selIcon(this,'${ic}')" data-icon="${ic}">${ic}</span>`).join('');showModal(`<div class="modal-title">Edit Collection</div><button class="modal-close" onclick="closeModal()">✕</button><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cName" value="${esc(col.name)}" autofocus maxlength="50"></div><div class="form-group"><label class="form-label">Icon</label><div class="icon-grid" id="iconPicker">${opts}</div><input type="hidden" id="cIcon" value="${col.icon||'📁'}"></div><div class="modal-actions"><button class="btn btn-danger" onclick="confirmDelCol('${colId}')">Delete</button><div style="flex:1"></div><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="updateCol('${colId}')">Save</button></div>`);setTimeout(()=>{const s=document.querySelector(`#iconPicker .icon-opt[data-icon="${col.icon}"]`);if(s)selIcon(s,col.icon)},10)}
+function updateCol(colId){const name=document.getElementById('cName')?.value?.trim();const icon=document.getElementById('cIcon')?.value||'📁';if(!name){hiErr('cName');return}const col=getCol(colId);if(!col)return;col.name=name;col.icon=icon;saveState();closeModal();toast('✓ Updated',true);render()}
+function confirmDelCol(colId){const col=getCol(colId);closeModal();confirm2('Delete Collection',`Delete "<strong>${esc(col?.name)}</strong>"? All ${(col?.entries||[]).length} entries will be removed.`,()=>{state.collections=state.collections.filter(c=>c.id!==colId);saveState();toast('Collection deleted');go({page:'home'})})}
+let _ef=[],_dragSrc=null;
+function openNewEntryModal(colId){_ef=[{id:uid(),label:'',type:'text',value:''}];showEntryModal(colId,null)}
+function openEditEntryModal(colId,entId){const e=getEnt(colId,entId);if(!e)return;_ef=(e.fields||[]).map(f=>({...f,id:f.id||uid()}));showEntryModal(colId,entId)}
+function showEntryModal(colId,entId){const e=entId?getEnt(colId,entId):null;showModal(`<div class="modal-title">${e?'Edit Entry':'New Entry'}</div><button class="modal-close" onclick="closeModal()">✕</button><div class="form-group"><label class="form-label">Title</label><input class="form-input" id="eTitle" placeholder="e.g. Gmail Account, Chase Visa…" value="${e?esc(e.title):''}" autofocus maxlength="80"></div><div class="form-group"><label class="form-label">Fields <span class="hint">— drag to reorder</span></label><div id="fBuilder"></div><button class="add-field-btn" onclick="addField()">＋ Add Field</button></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEntry('${colId}','${entId||''}')">${e?'Save Changes':'Create Entry'}</button></div>`);buildFields()}
+function buildFields(){const b=document.getElementById('fBuilder');if(!b)return;b.innerHTML='';_ef.forEach((f,i)=>{const opts=FTYPES.map(t=>`<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('');const vi=valInput(f,i);const row=document.createElement('div');row.className='field-row';row.draggable=true;row.dataset.i=i;row.innerHTML=`<input class="form-input" placeholder="Label (e.g. Username)" value="${esc(f.label)}" oninput="_ef[${i}].label=this.value" style="min-width:0"><select class="form-select" onchange="chType(${i},this.value)">${opts}</select><button class="rm-field" onclick="rmField(${i})" title="Remove">✕</button><div class="field-row-value">${vi}</div>`;row.addEventListener('dragstart',e=>{_dragSrc=i;row.classList.add('dragging');e.dataTransfer.effectAllowed='move'});row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over')});row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));row.addEventListener('drop',e=>{e.preventDefault();row.classList.remove('drag-over');if(_dragSrc===null||_dragSrc===i)return;const m=_ef.splice(_dragSrc,1)[0];_ef.splice(i,0,m);_dragSrc=null;buildFields()});b.appendChild(row)})}
+function valInput(f,i){const v=f.value??'';switch(f.type){case'textarea':return`<textarea class="form-textarea" placeholder="Enter value…" oninput="_ef[${i}].value=this.value">${esc(v)}</textarea>`;case'password':return`<div style="position:relative"><input class="form-input" type="password" id="pwi${i}" placeholder="Enter password…" value="${esc(v)}" oninput="_ef[${i}].value=this.value"><button type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer;font-size:11px;font-family:var(--mono)" onclick="tgPwInput(${i})">Show</button></div>`;case'number':return`<input class="form-input" type="number" placeholder="0" value="${esc(v)}" oninput="_ef[${i}].value=this.value">`;case'date':return`<input class="form-input" type="date" value="${esc(v)}" oninput="_ef[${i}].value=this.value">`;case'file':return`<div style="display:flex;align-items:center;gap:8px"><input class="form-input" type="file" style="cursor:pointer;flex:1" onchange="handleFile(event,${i})">${v?`<span style="font-size:11px;color:var(--success)">✓</span>`:''}</div>`;case'link':return`<input class="form-input" type="url" placeholder="https://…" value="${esc(v)}" oninput="_ef[${i}].value=this.value">`;default:return`<input class="form-input" placeholder="Enter value…" value="${esc(v)}" oninput="_ef[${i}].value=this.value">`}}
+function tgPwInput(i){const el=document.getElementById(`pwi${i}`);if(!el)return;const b=el.nextElementSibling;el.type=el.type==='password'?'text':'password';b.textContent=el.type==='password'?'Show':'Hide'}
+function handleFile(e,i){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{_ef[i].value=ev.target.result;buildFields()};r.readAsDataURL(f)}
+function chType(i,t){_ef[i].type=t;_ef[i].value='';buildFields()}
+function addField(){_ef.push({id:uid(),label:'',type:'text',value:''});buildFields();setTimeout(()=>{const rows=document.querySelectorAll('#fBuilder .field-row');rows[rows.length-1]?.querySelector('input')?.focus();rows[rows.length-1]?.scrollIntoView({behavior:'smooth',block:'nearest'})},30)}
+function rmField(i){_ef.splice(i,1);buildFields()}
+function saveEntry(colId,entId){const title=document.getElementById('eTitle')?.value?.trim();if(!title){hiErr('eTitle');return}const col=getCol(colId);if(!col)return;const fields=_ef.map(f=>({id:f.id,label:f.label||'Field',type:f.type||'text',value:f.value??''}));if(entId){const e=col.entries.find(e=>e.id===entId);if(e){e.title=title;e.fields=fields;e.updatedAt=Date.now()}}else col.entries.push({id:uid(),title,fields,createdAt:Date.now()});saveState();closeModal();toast(entId?'✓ Entry updated':'✓ Entry created',true);go(entId?{page:'detail',collectionId:colId,entryId:entId}:{page:'entries',collectionId:colId})}
+function confirmDeleteEntry(colId,entId){const e=getEnt(colId,entId);confirm2('Delete Entry',`Delete "<strong>${esc(e?.title)}</strong>"? This cannot be undone.`,()=>{const col=getCol(colId);col.entries=col.entries.filter(e=>e.id!==entId);saveState();toast('Entry deleted');go({page:'entries',collectionId:colId})})}
+function confirm2(title,body,onOk){const d=document.createElement('div');d.className='confirm-overlay';d.innerHTML=`<div class="confirm-box"><h3>${title}</h3><p>${body}</p><div class="confirm-actions"><button class="btn btn-ghost" id="cCancel">Cancel</button><button class="btn btn-danger" id="cOk">Delete</button></div></div>`;document.body.appendChild(d);d.querySelector('#cCancel').onclick=()=>d.remove();d.querySelector('#cOk').onclick=()=>{d.remove();onOk()};d.onclick=e=>{if(e.target===d)d.remove()}}
+function showModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('overlay').style.display='flex'}
+function closeModal(){document.getElementById('overlay').style.display='none';document.getElementById('modal-content').innerHTML='';_ef=[]}
+function closeOverlay(e){if(e.target===document.getElementById('overlay'))closeModal()}
+function hiErr(id){const el=document.getElementById(id);if(!el)return;el.style.borderColor='var(--danger)';el.style.boxShadow='0 0 0 3px var(--danger-dim)';el.focus();setTimeout(()=>{el.style.borderColor='';el.style.boxShadow=''},1800)}
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+document.addEventListener('keydown',e=>{const tag=document.activeElement?.tagName;const typing=['INPUT','TEXTAREA','SELECT'].includes(tag);if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('palette').style.display==='none'?openPalette():closePalette({});return}if((e.ctrlKey||e.metaKey)&&e.key==='b'){e.preventDefault();toggleSidebar();return}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='N'){e.preventDefault();closeModal();openNewCollectionModal();return}if(e.key==='Escape'){if(document.getElementById('palette').style.display!=='none'){closePalette({});return}closeModal();return}if(typing)return;if(e.key==='n'&&view.page==='entries')openNewEntryModal(view.collectionId);if(e.key==='e'&&view.page==='detail')openEditEntryModal(view.collectionId,view.entryId);if(e.key==='Backspace'){if(view.page==='detail')go({page:'entries',collectionId:view.collectionId});else if(view.page==='entries')go({page:'home'})}if(e.key==='?')showShortcuts()});
+
+/* ── PWA Service Worker Registration ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(r=>console.log('[SW] Registered'))
+      .catch(e=>console.warn('[SW] Failed:',e));
+  });
+}
+
+render();
+</script>
+</body>
+</html>
